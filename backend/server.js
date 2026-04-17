@@ -12,14 +12,6 @@ const PORT = process.env.PORT || 3000;
 const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!HUGGINGFACE_API_KEY) {
-  throw new Error('HUGGINGFACE_API_KEY is required in .env file');
-}
-
-if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI is required in .env file');
-}
-
 const frontendPath = path.join(__dirname, '..', 'frontend');
 app.use(express.static(frontendPath));
 
@@ -32,23 +24,19 @@ async function connectMongo() {
     console.warn(mongoStatus.error);
     return;
   }
-
   try {
     const client = new MongoClient(MONGODB_URI);
     await client.connect();
     mongoDb = client.db();
     mongoStatus.dbName = mongoDb.databaseName;
-
     const existing = await mongoDb.listCollections({}, { nameOnly: true }).toArray();
     const existingNames = existing.map(c => c.name);
     const requiredCollections = ['zones', 'depots', 'supplies'];
-
     for (const name of requiredCollections) {
       if (!existingNames.includes(name)) {
         await mongoDb.createCollection(name);
       }
     }
-
     mongoStatus.connected = true;
     console.log(`MongoDB Atlas connected to database "${mongoStatus.dbName}"`);
   } catch (err) {
@@ -141,53 +129,13 @@ resourceRoutes.forEach(route => {
   app.delete(`${route.path}/:id`, (req, res) => deleteItem(req, res, route.key));
 });
 
+// Single /api/status route
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'ok',
-    backend: 'nodejs',
-    port: PORT,
-    timestamp: new Date().toISOString(),
+    backend: 'render',
     mongodb: mongoStatus,
-    huggingface: {
-      configured: Boolean(HUGGINGFACE_API_KEY)
-    }
-  });
-});
-
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    backend: 'render',
-    huggingface: { configured: !!process.env.HF_API_KEY }
-  });
-});
-
-app.get('/api/placeholder', (req, res) => {
-  res.json({
-    message: 'This is a Node.js backend placeholder. The frontend is served from the static frontend folder.',
-  });
-});
-
-app.post('/api/huggingface', (req, res) => {
-  if (!HUGGINGFACE_API_KEY) {
-    return res.status(400).json({
-      error: 'HUGGINGFACE_API_KEY is not configured.',
-      hint: 'Add HUGGINGFACE_API_KEY to backend/.env or backend/.env.example.'
-    });
-  }
-
-  const prompt = req.body.prompt || '';
-  res.json({
-    configured: true,
-    prompt,
-    output: `Placeholder Hugging Face output for prompt: "${prompt}". Replace this with a real Hugging Face API call.`,
-    note: 'This route simulates Hugging Face API behavior without making an external request.'
-  });
-});
-
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    backend: 'render',
-    huggingface: { configured: !!process.env.HF_API_KEY }
+    huggingface: { configured: Boolean(HUGGINGFACE_API_KEY) }
   });
 });
 
