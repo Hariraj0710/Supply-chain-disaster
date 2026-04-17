@@ -413,7 +413,7 @@ function refreshMap(zonesToShow, depotsToShow, allocations) {
 }
 
 function loadStatus() {
-  fetch('/api/status')
+  fetch('https://disaster-supply-chain.onrender.com/api/status')
     .then(response => response.json())
     .then(data => {
       document.getElementById('dbBadge').className = 'db-badge db-on';

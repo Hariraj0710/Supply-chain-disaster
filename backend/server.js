@@ -154,8 +154,11 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-app.get('/api/db/status', (req, res) => {
-  res.json(mongoStatus);
+app.get('/api/status', (req, res) => {
+  res.json({ 
+    backend: 'render',
+    huggingface: { configured: !!process.env.HF_API_KEY }
+  });
 });
 
 app.get('/api/placeholder', (req, res) => {
